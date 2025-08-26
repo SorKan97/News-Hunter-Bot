@@ -1,80 +1,42 @@
-import logging
-import yaml
+import asyncio
 import feedparser
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    filters, ContextTypes
-)
+import yaml
+from telegram import Bot
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# -------------------- CONFIG --------------------
-TELEGRAM_TOKEN = '7758681553:AAE4d_tBpJY1S_Nor8IvbEzFWe_mgbm-gME'
-FEEDS_FILE = 'feeds.yml'
+# --- CONFIG ---
+TELEGRAM_TOKEN = "7758681553:AAE4d_tBpJY1S_Nor8IvbEzFWe_mgbm-gME"
+TARGET_CHAT_IDS = [67013888]  # <-- Add your Telegram chat ID(s) here
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-chat_ids = set()
+# --- NEWS FEEDS ---
+with open("feeds.yml", "r") as f:
+    FEEDS = yaml.safe_load(f)
 
-# -------------------- LOAD FEEDS --------------------
-with open(FEEDS_FILE, 'r', encoding='utf-8') as f:
-    feeds = yaml.safe_load(f)['feeds']
+# --- COMMAND HANDLERS ---
+async def start(update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is running!")
 
-# -------------------- HANDLERS --------------------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    chat_ids.add(chat_id)
-    await update.message.reply_text(
-        f"Hello! Your chat ID is {chat_id}. You will start receiving news shortly."
-    )
+# --- FETCH & SEND NEWS ---
+async def fetch_and_send_news(bot: Bot):
+    while True:
+        for feed_name, url in FEEDS.items():
+            d = feedparser.parse(url)
+            if d.entries:
+                latest = d.entries[0].title
+                for chat_id in TARGET_CHAT_IDS:
+                    await bot.send_message(chat_id=chat_id, text=f"{feed_name}: {latest}")
+        await asyncio.sleep(3600)  # repeat every 1 hour
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    if chat_id not in chat_ids:
-        chat_ids.add(chat_id)
-        await update.message.reply_text(f"Got your chat ID: {chat_id}. You are added.")
-
-# -------------------- FETCH NEWS --------------------
-async def fetch_and_send_news(context: ContextTypes.DEFAULT_TYPE):
-    for feed in feeds:
-        parsed_feed = feedparser.parse(feed['url'])
-        if parsed_feed.entries:
-            for entry in parsed_feed.entries[:3]:  # Top 3 entries per feed
-                for chat_id in chat_ids:
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text=f"{feed['name']}:\n{entry.title}\n{entry.link}"
-                    )
-
-# -------------------- MAIN --------------------
-def main():
-    if not TELEGRAM_TOKEN:
-        raise RuntimeError("TELEGRAM_TOKEN is required")
-
+# --- MAIN ---
+async def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
 
-    # Commands
-    app.add_handler(CommandHandler('start', start))
+    # Start news task
+    asyncio.create_task(fetch_and_send_news(app.bot))
 
-    # Messages
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    # Run bot
+    await app.run_polling()
 
-    # Send news immediately after /start
-    async def immediate_news(context: ContextTypes.DEFAULT_TYPE):
-        for chat_id in chat_ids:
-            for feed in feeds:
-                parsed_feed = feedparser.parse(feed['url'])
-                if parsed_feed.entries:
-                    for entry in parsed_feed.entries[:3]:
-                        await context.bot.send_message(
-                            chat_id=chat_id,
-                            text=f"{feed['name']}:\n{entry.title}\n{entry.link}"
-                        )
-
-    # Job queue for hourly news
-    app.job_queue.run_repeating(fetch_and_send_news, interval=3600, first=10)
-
-    logger.info("Bot started. Waiting for messages to get chat ID...")
-    app.run_polling()
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    asyncio.run(main())
