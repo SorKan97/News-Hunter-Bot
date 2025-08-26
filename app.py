@@ -1,12 +1,13 @@
 import asyncio
 import feedparser
 import yaml
+import html
 from telegram import Bot
 from telegram.ext import ApplicationBuilder
 
 # ====== CONFIG ======
 TELEGRAM_TOKEN = "7758681553:AAE4d_tBpJY1S_Nor8IvbEzFWe_mgbm-gME"
-CHAT_ID = 67013888  # your chat ID
+CHAT_ID = 67013888
 FEEDS_FILE = "feeds.yml"
 
 # ====== Load feeds ======
@@ -19,41 +20,43 @@ if not feeds:
     exit(1)
 
 
-# ====== Async function to fetch news and send ======
 async def fetch_and_send_news(bot: Bot):
     for url in feeds:
         try:
-            # Make sure url is a string
             if isinstance(url, list):
                 url = url[0]
             d = feedparser.parse(str(url))
-            for entry in d.entries[:5]:  # send only latest 5 items per feed
-                message = f"*{entry.title}*\n{entry.link}"
+            for entry in d.entries[:5]:
+                title = html.escape(entry.title)
+                link = entry.link
+                message = f"*{title}*\n{link}"
                 await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
         except Exception as e:
             print(f"Error fetching/sending feed {url}: {e}")
 
 
-# ====== Main async function ======
+async def scheduler(bot: Bot):
+    while True:
+        await asyncio.sleep(3600)  # every hour
+        await fetch_and_send_news(bot)
+
+
 async def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     bot = app.bot
 
-    # Run fetch_and_send_news once at start
+    # Run fetch once at start
     await fetch_and_send_news(bot)
 
-    # Schedule it every hour
-    async def scheduler():
-        while True:
-            await asyncio.sleep(3600)  # 1 hour
-            await fetch_and_send_news(bot)
+    # Schedule repeated fetching
+    app.create_task(scheduler(bot))
 
-    # Create task for scheduler
-    app.create_task(scheduler())
-
-    # Start polling
+    # Start bot polling (this handles its own event loop!)
     await app.run_polling()
 
 
+# ✅ Instead of asyncio.run(), call main() directly
 if __name__ == "__main__":
-    asyncio.run(main())
+    import nest_asyncio
+    nest_asyncio.apply()  # allows event loop to work on Render
+    asyncio.get_event_loop().run_until_complete(main())
