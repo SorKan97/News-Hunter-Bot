@@ -1,0 +1,75 @@
+feeds:
+  - name: "Foreign Policy"
+    url: "https://foreignpolicy.com/feed/"
+
+  - name: "Council on Foreign Relations (CFR)"
+    url: "https://www.cfr.org/rss/all.xml"
+
+  - name: "Brookings Institution - Foreign Policy"
+    url: "https://www.brookings.edu/feed/?post_type=research"
+
+  - name: "The Diplomat"
+    url: "https://thediplomat.com/feed/"
+
+  - name: "Politico - Global"
+    url: "https://www.politico.com/rss/world-news"
+
+  - name: "Stratfor Worldview"
+    url: "https://worldview.stratfor.com/rss.xml"
+
+  - name: "World Politics Review"
+    url: "https://www.worldpoliticsreview.com/rss"
+
+  - name: "The Economist - International"
+    url: "https://www.economist.com/international/rss.xml"
+
+  - name: "BBC World News"
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+
+  - name: "Reuters - World News"
+    url: "http://feeds.reuters.com/Reuters/worldNews"
+
+  - name: "New York Times - World"
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+
+  - name: "The Guardian - World"
+    url: "https://www.theguardian.com/world/rss"
+
+  - name: "Al Jazeera - International"
+    url: "https://www.aljazeera.com/xml/rss/all.xml"
+
+  - name: "Wall Street Journal - World"
+    url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
+
+  - name: "Financial Times - World"
+    url: "https://www.ft.com/world?format=rss"
+
+  - name: "Defense News"
+    url: "https://www.defensenews.com/feeds/all.rss"
+
+  - name: "War on the Rocks"
+    url: "https://warontherocks.com/feed/"
+
+  - name: "Jane's Defence Weekly"
+    url: "https://www.janes.com/rss-feeds"
+
+  - name: "Army Technology"
+    url: "https://www.army-technology.com/feed/"
+
+  - name: "Naval News"
+    url: "https://www.navalnews.com/feed/"
+
+  - name: "The Aviationist"
+    url: "https://theaviationist.com/feed/"
+
+  - name: "Military Times"
+    url: "https://www.militarytimes.com/rss/"
+
+  - name: "Defense One"
+    url: "https://www.defenseone.com/feeds/rss/"
+
+  - name: "National Geographic"
+    url: "https://www.nationalgeographic.com/content/nationalgeographic/en_us/rss"
+
+  - name: "Geography Realm"
+    url: "https://www.geographyrealm.com/feed/"
