@@ -1,67 +1,59 @@
-# app.py
 import asyncio
-import yaml
-from telegram.ext import ApplicationBuilder, CommandHandler
 import feedparser
+import yaml
+from telegram import Bot
+from telegram.ext import ApplicationBuilder
 
-# ========================
-# Configuration
-# ========================
+# ====== CONFIG ======
 TELEGRAM_TOKEN = "7758681553:AAE4d_tBpJY1S_Nor8IvbEzFWe_mgbm-gME"
-CHAT_ID = 67013888
-
+CHAT_ID = 67013888  # your chat ID
 FEEDS_FILE = "feeds.yml"
 
-# ========================
-# Load RSS feeds
-# ========================
-def load_feeds():
-    with open(FEEDS_FILE, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    feeds = data.get("feeds", [])
-    if not feeds:
-        print("Warning: No feeds found in feeds.yml")
-    return feeds
+# ====== Load feeds ======
+with open(FEEDS_FILE, "r", encoding="utf-8") as f:
+    data = yaml.safe_load(f)
+feeds = data.get("feeds", [])
 
-# ========================
-# Functions
-# ========================
-async def fetch_and_send_news(application):
-    feeds = load_feeds()
+if not feeds:
+    print("No feeds found in feeds.yml. Exiting.")
+    exit(1)
+
+
+# ====== Async function to fetch news and send ======
+async def fetch_and_send_news(bot: Bot):
     for url in feeds:
-        feed = feedparser.parse(url)
-        for entry in feed.entries:
-            await application.bot.send_message(
-                chat_id=CHAT_ID,
-                text=f"{entry.title}\n{entry.link}"
-            )
+        try:
+            # Make sure url is a string
+            if isinstance(url, list):
+                url = url[0]
+            d = feedparser.parse(str(url))
+            for entry in d.entries[:5]:  # send only latest 5 items per feed
+                message = f"*{entry.title}*\n{entry.link}"
+                await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
+        except Exception as e:
+            print(f"Error fetching/sending feed {url}: {e}")
 
-async def start_command(update, context):
-    await update.message.reply_text("Bot is running!")
 
-# ========================
-# Main Application
-# ========================
+# ====== Main async function ======
 async def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    bot = app.bot
 
-    # Add /start command
-    app.add_handler(CommandHandler("start", start_command))
+    # Run fetch_and_send_news once at start
+    await fetch_and_send_news(bot)
 
-    # Fetch RSS once at startup
-    app.create_task(fetch_and_send_news(app))
+    # Schedule it every hour
+    async def scheduler():
+        while True:
+            await asyncio.sleep(3600)  # 1 hour
+            await fetch_and_send_news(bot)
 
-    # Start bot
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling()
-    await app.updater.idle()
-    await app.stop()
-    await app.shutdown()
+    # Create task for scheduler
+    app.create_task(scheduler())
 
-# ========================
-# Entry point
-# ========================
+    # Start polling
+    await app.run_polling()
+
+
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
